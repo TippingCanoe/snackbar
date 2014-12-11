@@ -32,6 +32,7 @@ import com.nispok.snackbar.listeners.SwipeDismissTouchListener;
  */
 public class Snackbar extends SnackbarLayout {
 
+
     public enum SnackbarDuration {
         LENGTH_SHORT(2000), LENGTH_LONG(3500);
 
@@ -52,6 +53,12 @@ public class Snackbar extends SnackbarLayout {
     private int mColor = -1;
     private int mTextColor = -1;
     private int mOffset;
+    private int mPosition = -1;
+    private int mMarginTop = -1;
+    private int mMarginBottom = -1;
+    private int mMarginLeft = -1;
+    private int mMarginRight = -1;
+    private LayoutParams mLayoutParams;
     private long mSnackbarStart;
     private long mSnackbarFinish;
     private long mTimeRemaining = -1;
@@ -163,6 +170,48 @@ public class Snackbar extends SnackbarLayout {
      */
     public Snackbar actionLabel(CharSequence actionButtonLabel) {
         mActionLabel = actionButtonLabel;
+        return this;
+    }
+
+    /**
+     * Set the Gravity of the snackbar. Recomended values Gravity.TOP and Gravity.BOTTOM
+     *
+     * @param position
+     * @return
+     */
+    public Snackbar position(int position) {
+        mPosition = position;
+        return this;
+    }
+
+    private int getInAnimation() {
+        if (mPosition == Gravity.TOP)
+            return R.anim.snackbar_top_in;
+        else
+            return R.anim.snackbar_bottom_in;
+    }
+
+    private int getOutAnimation() {
+        if (mPosition == Gravity.TOP)
+            return R.anim.snackbar_top_out;
+        else
+            return R.anim.snackbar_bottom_out;
+    }
+
+
+    public Snackbar margin(int margin) {
+        return margin(margin, margin, margin, margin);
+    }
+
+    public Snackbar margin(int marginLR, int marginTB) {
+        return margin(marginLR, marginTB, marginLR, marginTB);
+    }
+
+    public Snackbar margin(int marginLeft, int marginTop, int marginRight, int marginBottom) {
+        mMarginLeft = marginLeft;
+        mMarginTop = marginTop;
+        mMarginBottom = marginBottom;
+        mMarginRight = marginRight;
         return this;
     }
 
@@ -327,6 +376,7 @@ public class Snackbar extends SnackbarLayout {
 
         Resources res = getResources();
         mColor = mColor != -1 ? mColor : res.getColor(R.color.sb__background);
+        mPosition = mPosition != -1 ? mPosition : Gravity.BOTTOM;
         mOffset = res.getDimensionPixelOffset(R.dimen.sb__offset);
         float scale = res.getDisplayMetrics().density;
 
@@ -338,6 +388,8 @@ public class Snackbar extends SnackbarLayout {
             layout.setBackgroundColor(mColor);
             params = new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+            params = setSnackBarMargins(params);
+
         } else {
             // Tablet/desktop
             mType = SnackbarType.SINGLE_LINE; // Force single-line
@@ -350,11 +402,12 @@ public class Snackbar extends SnackbarLayout {
             params = new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.WRAP_CONTENT, dpToPx(mType.getMaxHeight(), scale));
 
+
             params.leftMargin = mOffset;
             params.bottomMargin = mOffset;
         }
 
-        params.gravity = Gravity.BOTTOM;
+        params.gravity = mPosition;
 
         TextView snackbarText = (TextView) layout.findViewById(R.id.sb__text);
         snackbarText.setText(mText);
@@ -425,6 +478,16 @@ public class Snackbar extends SnackbarLayout {
         return params;
     }
 
+    private FrameLayout.LayoutParams setSnackBarMargins(FrameLayout.LayoutParams params) {
+        Resources res = getResources();
+        params.leftMargin = mMarginLeft != -1 ? mMarginLeft : res.getDimensionPixelOffset(R.dimen.sb__offset);
+        params.topMargin = mMarginTop != -1 ? mMarginTop : res.getDimensionPixelOffset(R.dimen.sb__offset);
+        params.rightMargin = mMarginRight != -1 ? mMarginRight : res.getDimensionPixelOffset(R.dimen.sb__offset);
+        params.bottomMargin = mMarginBottom != -1 ? mMarginBottom : res.getDimensionPixelOffset(R.dimen.sb__offset);
+        return params;
+    }
+
+
     private static int dpToPx(int dp, float scale) {
         return (int) (dp * scale + 0.5f);
     }
@@ -436,6 +499,8 @@ public class Snackbar extends SnackbarLayout {
      * @param targetActivity
      */
     public void show(Activity targetActivity) {
+
+
         FrameLayout.LayoutParams params = init(targetActivity);
 
         ViewGroup root = (ViewGroup) targetActivity.findViewById(android.R.id.content);
@@ -470,7 +535,7 @@ public class Snackbar extends SnackbarLayout {
             return;
         }
 
-        Animation slideIn = AnimationUtils.loadAnimation(getContext(), R.anim.snackbar_in);
+        Animation slideIn = AnimationUtils.loadAnimation(getContext(), getInAnimation());
         slideIn.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
@@ -531,7 +596,7 @@ public class Snackbar extends SnackbarLayout {
             return;
         }
 
-        final Animation slideOut = AnimationUtils.loadAnimation(getContext(), R.anim.snackbar_out);
+        final Animation slideOut = AnimationUtils.loadAnimation(getContext(), getOutAnimation());
         slideOut.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
@@ -629,8 +694,8 @@ public class Snackbar extends SnackbarLayout {
      * to enter the view
      */
     @AnimRes
-    public static int getInAnimationResource() {
-        return R.anim.snackbar_in;
+    public int getInAnimationResource() {
+        return getInAnimation();
     }
 
     /**
@@ -638,7 +703,7 @@ public class Snackbar extends SnackbarLayout {
      * to exit the view
      */
     @AnimRes
-    public static int getOutAnimationResource() {
-        return R.anim.snackbar_out;
+    public int getOutAnimationResource() {
+        return getOutAnimation();
     }
 }

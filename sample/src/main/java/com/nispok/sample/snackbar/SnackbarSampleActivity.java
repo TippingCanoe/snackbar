@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -33,8 +34,17 @@ public class SnackbarSampleActivity extends ActionBarActivity {
             @Override
             public void onClick(View v) {
                 SnackbarManager.getInstance().show(
-                        Snackbar.with(SnackbarSampleActivity.this)
-                                .text("Single-line snackbar"));
+                        Snackbar.with(SnackbarSampleActivity.this).position(Gravity.BOTTOM).margin(getResources().getDimensionPixelOffset(com.nispok.snackbar.R.dimen.sb__text_padding_right), getResources().getDimensionPixelOffset(com.nispok.snackbar.R.dimen.sb__text_padding_right))
+                                .text("Single-line with Padding"));
+            }
+        });
+        Button singleLineTopButton = (Button) findViewById(R.id.single_line_top);
+        singleLineTopButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SnackbarManager.getInstance().show(
+                        Snackbar.with(SnackbarSampleActivity.this).position(Gravity.TOP).margin(getResources().getDimensionPixelOffset(com.nispok.snackbar.R.dimen.sb__text_padding_left))
+                                .text("Single-line-TOP snackbar"));
             }
         });
 

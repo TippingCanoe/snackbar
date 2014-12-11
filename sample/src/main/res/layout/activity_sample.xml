@@ -17,7 +17,13 @@
             android:id="@+id/single_line"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Single-line" />
+            android:text="Single-line with Padding" />
+
+        <Button
+            android:id="@+id/single_line_top"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Single-line Top" />
 
         <Button
             android:id="@+id/single_line_with_action"
