@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Pressed -->
+    <item android:drawable="@drawable/custom_shape_hl" android:state_pressed="true" />
+    <!-- Selected -->
+    <item android:drawable="@drawable/custom_shape_hl" android:state_selected="true" />
+    <!-- Focus -->
+    <item android:drawable="@drawable/custom_shape_hl" android:state_focused="true" />
+    <!-- Default -->
+    <item android:drawable="@drawable/custom_shape" />
+</selector>

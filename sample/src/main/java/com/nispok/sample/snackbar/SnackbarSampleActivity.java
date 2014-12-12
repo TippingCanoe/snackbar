@@ -6,7 +6,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -34,8 +33,8 @@ public class SnackbarSampleActivity extends ActionBarActivity {
             @Override
             public void onClick(View v) {
                 SnackbarManager.getInstance().show(
-                        Snackbar.with(SnackbarSampleActivity.this).position(Gravity.BOTTOM).margin(getResources().getDimensionPixelOffset(com.nispok.snackbar.R.dimen.sb__text_padding_right), getResources().getDimensionPixelOffset(com.nispok.snackbar.R.dimen.sb__text_padding_right))
-                                .text("Single-line with Padding"));
+                        Snackbar.with(SnackbarSampleActivity.this).position(Snackbar.BOTTOM).margin(getResources().getDimensionPixelOffset(com.nispok.snackbar.R.dimen.sb__text_padding_right))
+                                .text("Single-line Margins"));
             }
         });
         Button singleLineTopButton = (Button) findViewById(R.id.single_line_top);
@@ -43,8 +42,39 @@ public class SnackbarSampleActivity extends ActionBarActivity {
             @Override
             public void onClick(View v) {
                 SnackbarManager.getInstance().show(
-                        Snackbar.with(SnackbarSampleActivity.this).position(Gravity.TOP).margin(getResources().getDimensionPixelOffset(com.nispok.snackbar.R.dimen.sb__text_padding_left))
-                                .text("Single-line-TOP snackbar"));
+                        Snackbar.with(SnackbarSampleActivity.this).position(Snackbar.TOP)
+                                .text("Single-line TOP"));
+            }
+        });
+
+
+        Button singleLineButtonInside = (Button) findViewById(R.id.single_line_inside);
+        singleLineButtonInside.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Snackbar sb = Snackbar.with(SnackbarSampleActivity.this).containerLayoutId(R.id.view_linear_layout).position(Snackbar.BOTTOM)
+                        .text("Single-line Inside RelativeLayout");
+                SnackbarManager.getInstance().show(sb);
+
+            }
+        });
+        Button singleLineTopButtonInside = (Button) findViewById(R.id.single_line_top_inside);
+        singleLineTopButtonInside.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SnackbarManager.getInstance().show(
+                        Snackbar.with(SnackbarSampleActivity.this).position(Snackbar.TOP).containerLayoutId(R.id.view_realtive_layout).margin(25, 15)
+                                .text("Single-line TOP Inside LinearLayout"));
+            }
+        });
+
+        Button singleLineButtonCustomShape = (Button) findViewById(R.id.single_line_shape);
+        singleLineButtonCustomShape.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SnackbarManager.getInstance().show(
+                        Snackbar.with(SnackbarSampleActivity.this).position(Snackbar.TOP).margin(15, 15).shape(R.drawable.custom_button)
+                                .text("Single-line Custom Shape"));
             }
         });
 
@@ -78,6 +108,7 @@ public class SnackbarSampleActivity extends ActionBarActivity {
                                         " are meant for VERY short messages"));
             }
         });
+
 
         Button multiLineWithActionButton = (Button) findViewById(R.id.multi_line_with_action);
         multiLineWithActionButton.setOnClickListener(new View.OnClickListener() {
