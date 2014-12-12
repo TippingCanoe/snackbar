@@ -30,19 +30,20 @@ You can set the <code>position</code> to the top, add <code>margin</code> and a 
 <br />
 ```java
 Snackbar.with(getApplicationContext()) // context
-    .text("Single-line snackbar")
+    .text("Text")
     .position(Snackbar.TOP)
     .margin(20) //  also margin(left-rigth,top-bottom) and margin(left,top,right,bottom)
     .shape(R.drawable.custom_button)
-    .show(this); // activity where it is displayed
+    .show(this); 
 ```
 <br />
-You can set the layout where the snackbar will appear <code>containerLayoutId</code>, ir should be a framelayout,linearlayout or a framelayout:
+You can set the layout where the snackbar will appear <code>containerLayoutId</code>, it should be a RelativeLayout,LinearLayout or a FrameLayout:
 <br />
 ```java
 Snackbar.with(getApplicationContext()) // context
-    .text("Single-line snackbar").containerLayoutId(R.id.view_layout)
-    .show(this); // activity where it is displayed
+    .text("Text")
+    .containerLayoutId(R.id.view_layout)
+    .show(this); 
 ```
 
 If you want an action button to be displayed, just assign a label and an <code>ActionClickListener</code>:
