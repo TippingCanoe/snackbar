@@ -42,12 +42,6 @@ public class SnackbarTests extends InstrumentationTestCase {
         assertEquals(Snackbar.SnackbarDuration.LENGTH_SHORT.getDuration(), mSnackbar.getDuration());
     }
 
-    public void testSnackbarShouldHaveWhiteTextColorByDefault() {
-        mSnackbar = Snackbar.with(mContext);
-
-        assertEquals(Color.WHITE, mSnackbar.getTextColor());
-    }
-
     public void testSnackbarTextColorCanBeChanged() {
         mSnackbar = Snackbar.with(mContext).textColor(Color.GREEN);
 
@@ -131,6 +125,12 @@ public class SnackbarTests extends InstrumentationTestCase {
         mSnackbar = Snackbar.with(mContext);
 
         assertTrue(mSnackbar.shouldDismissOnActionClicked());
+    }
+
+    public void testSnackbarCustomDurationMustBeGreaterThanZero() {
+        mSnackbar = Snackbar.with(mContext).duration(0);
+
+        assertFalse(mSnackbar.getDuration() == 0);
     }
 
 }

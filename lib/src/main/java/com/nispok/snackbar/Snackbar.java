@@ -1,27 +1,29 @@
 package com.nispok.snackbar;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Resources;
-import android.graphics.drawable.Drawable;
+import android.graphics.Point;
+import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.support.annotation.AnimRes;
 import android.support.annotation.ColorRes;
 import android.support.annotation.StringRes;
-import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
-import android.util.Log;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AbsListView;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -36,11 +38,8 @@ import com.nispok.snackbar.listeners.SwipeDismissTouchListener;
  */
 public class Snackbar extends SnackbarLayout {
 
-    public static final String LOG_TAG = Snackbar.class.getSimpleName();
-
-
     public enum SnackbarDuration {
-        LENGTH_SHORT(2000), LENGTH_LONG(3500);
+        LENGTH_SHORT(2000), LENGTH_LONG(3500), LENGTH_INDEFINITE(-1);
 
         private long duration;
 
@@ -53,41 +52,59 @@ public class Snackbar extends SnackbarLayout {
         }
     }
 
+    private int mUndefinedColor = -10000;
+
     private SnackbarType mType = SnackbarType.SINGLE_LINE;
     private SnackbarDuration mDuration = SnackbarDuration.LENGTH_LONG;
     private CharSequence mText;
-    private int mColor = -1;
-    private int mTextColor = -1;
-    private int mDrawable = -1;
+    private int mColor = mUndefinedColor;
+    private int mTextColor = mUndefinedColor;
     private int mOffset;
-    private int mPosition = -1;
-    private int mMarginTop = -1;
-    private int mMarginBottom = -1;
-    private int mMarginLeft = -1;
-    private int mMarginRight = -1;
-    private int mContainerLayoutId = -1;
     private long mSnackbarStart;
     private long mSnackbarFinish;
     private long mTimeRemaining = -1;
     private CharSequence mActionLabel;
-    private int mActionColor = -1;
+    private int mActionColor = mUndefinedColor;
     private boolean mAnimated = true;
+    private boolean mIsReplacePending = false;
+    private boolean mIsShowingByReplace = false;
     private long mCustomDuration = -1;
     private ActionClickListener mActionClickListener;
+    private boolean mShouldAllowMultipleActionClicks;
+    private boolean mActionClicked;
     private boolean mShouldDismissOnActionClicked = true;
     private EventListener mEventListener;
+    private Typeface mTextTypeface;
+    private Typeface mActionTypeface;
     private boolean mIsShowing = false;
     private boolean mCanSwipeToDismiss = true;
     private boolean mIsDismissing = false;
+    private Rect mWindowInsets = new Rect();
+    private Rect mDisplayFrame = new Rect();
+    private Point mDisplaySize = new Point();
+    private Point mRealDisplaySize = new Point();
+    private Activity mTargetActivity;
+    private boolean mUsePhoneLayout;
     private Runnable mDismissRunnable = new Runnable() {
         @Override
         public void run() {
             dismiss();
         }
     };
+    private Runnable mRefreshLayoutParamsMarginsRunnable = new Runnable() {
+        @Override
+        public void run() {
+            refreshLayoutParamsMargins();
+        }
+    };
 
     private Snackbar(Context context) {
         super(context);
+
+        // inject helper view to use onWindowSystemUiVisibilityChangedCompat() event
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            addView(new SnackbarHelperChildViewJB(getContext()));
+        }
     }
 
     public static Snackbar with(Context context) {
@@ -137,7 +154,6 @@ public class Snackbar extends SnackbarLayout {
         return this;
     }
 
-
     /**
      * Sets the background color of this {@link Snackbar}
      *
@@ -147,18 +163,6 @@ public class Snackbar extends SnackbarLayout {
     public Snackbar colorResource(@ColorRes int resId) {
         return color(getResources().getColor(resId));
     }
-
-    /**
-     * Sets the background color of this {@link Snackbar}
-     *
-     * @param drawable
-     * @return
-     */
-    public Snackbar shape(int drawable) {
-        mDrawable = drawable;
-        return this;
-    }
-
 
     /**
      * Sets the text color of this {@link Snackbar}
@@ -190,86 +194,6 @@ public class Snackbar extends SnackbarLayout {
      */
     public Snackbar actionLabel(CharSequence actionButtonLabel) {
         mActionLabel = actionButtonLabel;
-        return this;
-    }
-
-    /**
-     * Set the Gravity of the snackbar. Recomended values Gravity.TOP and Gravity.BOTTOM
-     *
-     * @param position
-     * @return
-     */
-    public Snackbar position(int position) {
-        mPosition = position;
-        return this;
-    }
-
-    /**
-     * @return the specific in animation depending if the gravity is Top or Bottom
-     */
-    private int getInAnimation() {
-        if (mPosition == Snackbar.TOP)
-            return R.anim.snackbar_top_in;
-        else
-            return R.anim.snackbar_bottom_in;
-    }
-
-    /**
-     * @return the specific out animation depending if the gravity is Top or Bottom
-     */
-    private int getOutAnimation() {
-        if (mPosition == Snackbar.TOP)
-            return R.anim.snackbar_top_out;
-        else
-            return R.anim.snackbar_bottom_out;
-    }
-
-    /**
-     * Sets all the margins of the snackbar
-     *
-     * @param margin size of the margins in pixels
-     * @return
-     */
-    public Snackbar margin(int margin) {
-        return margin(margin, margin, margin, margin);
-    }
-
-    /**
-     * Sets all the margin of the snackbar
-     *
-     * @param marginLR size of the left and right margins in pixels
-     * @param marginTB size of the top and bottom margins in pixels
-     * @return
-     */
-    public Snackbar margin(int marginLR, int marginTB) {
-        return margin(marginLR, marginTB, marginLR, marginTB);
-    }
-
-    /**
-     * Sets all the margin of the snackbar
-     *
-     * @param marginLeft   size of the left margin in pixels
-     * @param marginTop    size of the top margin in pixels
-     * @param marginRight  size of the right margin in pixels
-     * @param marginBottom size of the bottom margin in pixels
-     * @return
-     */
-    public Snackbar margin(int marginLeft, int marginTop, int marginRight, int marginBottom) {
-        mMarginLeft = marginLeft;
-        mMarginTop = marginTop;
-        mMarginBottom = marginBottom;
-        mMarginRight = marginRight;
-        return this;
-    }
-
-    /**
-     * Sets the container where the snackbar will be shown. It must be or inherit a Layout
-     *
-     * @param containerLayoutId the id of the layout where the snackbar will be shown.
-     * @return
-     */
-    public Snackbar containerLayoutId(int containerLayoutId) {
-        mContainerLayoutId = containerLayoutId;
         return this;
     }
 
@@ -332,6 +256,19 @@ public class Snackbar extends SnackbarLayout {
     }
 
     /**
+     * Determines whether this {@link Snackbar} should allow the action button to be
+     * clicked multiple times
+     *
+     * @param shouldAllow
+     * @return
+     */
+    public Snackbar allowMultipleActionClicks(boolean shouldAllow) {
+
+        mShouldAllowMultipleActionClicks = shouldAllow;
+        return this;
+    }
+
+    /**
      * Sets the listener to be called when the {@link Snackbar} is dismissed.
      *
      * @param listener
@@ -379,11 +316,11 @@ public class Snackbar extends SnackbarLayout {
     /**
      * Sets a custom duration of this {@link Snackbar}
      *
-     * @param duration
+     * @param duration custom duration. Value must be greater than 0 or it will be ignored
      * @return
      */
     public Snackbar duration(long duration) {
-        mCustomDuration = duration;
+        mCustomDuration = duration > 0 ? duration : mCustomDuration;
         return this;
     }
 
@@ -413,43 +350,144 @@ public class Snackbar extends SnackbarLayout {
     /**
      * Attaches this {@link Snackbar} to a RecyclerView so it dismisses when the list is scrolled
      *
-     * @param recyclerView
+     * @param recyclerView The RecyclerView instance to attach to.
      * @return
      */
-    public Snackbar attachToRecyclerView(RecyclerView recyclerView) {
-        recyclerView.setOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-                dismiss();
-            }
-        });
+    public Snackbar attachToRecyclerView(View recyclerView) {
+
+        try {
+            Class.forName("android.support.v7.widget.RecyclerView");
+
+            // We got here, so now we can safely check
+            RecyclerUtil.setScrollListener(this, recyclerView);
+        } catch (ClassNotFoundException ignored) {
+            throw new IllegalArgumentException("RecyclerView not found. Did you add it to your dependencies?");
+        }
 
         return this;
     }
 
+    /**
+     * Use a custom typeface for this Snackbar's text
+     *
+     * @param typeface
+     * @return
+     */
+    public Snackbar textTypeface(Typeface typeface) {
+        mTextTypeface = typeface;
+        return this;
+    }
 
-    private void init(Activity parent) {
-        SnackbarLayout layout = (SnackbarLayout) LayoutInflater.from(parent)
+    /**
+     * Use a custom typeface for this Snackbar's action label
+     *
+     * @param typeface
+     * @return
+     */
+    public Snackbar actionLabelTypeface(Typeface typeface) {
+        mActionTypeface = typeface;
+        return this;
+    }
+
+    private static MarginLayoutParams createMarginLayoutParams(ViewGroup viewGroup, int width, int height) {
+        if (viewGroup instanceof FrameLayout) {
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(width, height);
+            params.gravity = Gravity.BOTTOM;
+            return params;
+        } else if (viewGroup instanceof RelativeLayout) {
+            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(width, height);
+            return params;
+        } else {
+            throw new IllegalStateException("Requires FrameLayout or RelativeLayout for the parent of Snackbar");
+        }
+    }
+
+    static boolean shouldUsePhoneLayout(Context context) {
+        if (context == null) {
+            return true;
+        } else {
+            return context.getResources().getBoolean(R.bool.sb__is_phone);
+        }
+    }
+
+    private MarginLayoutParams init(Context context, Activity targetActivity, ViewGroup parent, boolean usePhoneLayout) {
+        SnackbarLayout layout = (SnackbarLayout) LayoutInflater.from(context)
                 .inflate(R.layout.sb__template, this, true);
 
-        setCustomValues();
-        setLayoutBasicParameters(layout);
-        setTextProperties(layout);
-        setAction(layout);
-        setSwipe();
-
-    }
-
-    private void setCustomValues() {
-        mColor = mColor != -1 ? mColor : getResources().getColor(R.color.sb__background);
-        mPosition = mPosition != -1 ? mPosition : Gravity.BOTTOM;
-        mOffset = getResources().getDimensionPixelOffset(R.dimen.sb__offset);
-    }
-
-    private void setSwipe() {
         Resources res = getResources();
-        if (mCanSwipeToDismiss && res.getBoolean(R.bool.is_swipeable)) {
+        mColor = mColor != mUndefinedColor ? mColor : res.getColor(R.color.sb__background);
+        mOffset = res.getDimensionPixelOffset(R.dimen.sb__offset);
+        mUsePhoneLayout = usePhoneLayout;
+        float scale = res.getDisplayMetrics().density;
+
+        MarginLayoutParams params;
+        if (mUsePhoneLayout) {
+            // Phone
+            layout.setMinimumHeight(dpToPx(mType.getMinHeight(), scale));
+            layout.setMaxHeight(dpToPx(mType.getMaxHeight(), scale));
+            layout.setBackgroundColor(mColor);
+            params = createMarginLayoutParams(
+                    parent, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+        } else {
+            // Tablet/desktop
+            mType = SnackbarType.SINGLE_LINE; // Force single-line
+            layout.setMinimumWidth(res.getDimensionPixelSize(R.dimen.sb__min_width));
+            layout.setMaxWidth(res.getDimensionPixelSize(R.dimen.sb__max_width));
+            layout.setBackgroundResource(R.drawable.sb__bg);
+            GradientDrawable bg = (GradientDrawable) layout.getBackground();
+            bg.setColor(mColor);
+
+            params = createMarginLayoutParams(
+                    parent, FrameLayout.LayoutParams.WRAP_CONTENT, dpToPx(mType.getMaxHeight(), scale));
+        }
+
+        TextView snackbarText = (TextView) layout.findViewById(R.id.sb__text);
+        snackbarText.setText(mText);
+        snackbarText.setTypeface(mTextTypeface);
+
+        if (mTextColor != mUndefinedColor) {
+            snackbarText.setTextColor(mTextColor);
+        }
+
+        snackbarText.setMaxLines(mType.getMaxLines());
+
+        TextView snackbarAction = (TextView) layout.findViewById(R.id.sb__action);
+        if (!TextUtils.isEmpty(mActionLabel)) {
+            requestLayout();
+            snackbarAction.setText(mActionLabel);
+            snackbarAction.setTypeface(mActionTypeface);
+
+            if (mActionColor != mUndefinedColor) {
+                snackbarAction.setTextColor(mActionColor);
+            }
+
+            snackbarAction.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (mActionClickListener != null) {
+
+                        // Before calling the onActionClicked() callback, make sure:
+                        // 1) The snackbar is not dismissing
+                        // 2) If we aren't allowing multiple clicks, that this is the first click
+                        if (!mIsDismissing && (!mActionClicked || mShouldAllowMultipleActionClicks)) {
+
+                            mActionClickListener.onActionClicked(Snackbar.this);
+                            mActionClicked = true;
+                        }
+                    }
+                    if (mShouldDismissOnActionClicked) {
+                        dismiss();
+                    }
+                }
+            });
+            snackbarAction.setMaxLines(mType.getMaxLines());
+        } else {
+            snackbarAction.setVisibility(GONE);
+        }
+
+        setClickable(true);
+
+        if (mCanSwipeToDismiss && res.getBoolean(R.bool.sb__is_swipeable)) {
             setOnTouchListener(new SwipeDismissTouchListener(this, null,
                     new SwipeDismissTouchListener.DismissCallbacks() {
                         @Override
@@ -466,6 +504,9 @@ public class Snackbar extends SnackbarLayout {
 
                         @Override
                         public void pauseTimer(boolean shouldPause) {
+                            if (isIndefiniteDuration()) {
+                                return;
+                            }
                             if (shouldPause) {
                                 removeCallbacks(mDismissRunnable);
 
@@ -478,111 +519,68 @@ public class Snackbar extends SnackbarLayout {
                         }
                     }));
         }
+
+        return params;
     }
 
-    private void setAction(SnackbarLayout layout) {
-        TextView snackbarAction = (TextView) layout.findViewById(R.id.sb__action);
-        if (!TextUtils.isEmpty(mActionLabel)) {
-            requestLayout();
-            snackbarAction.setText(mActionLabel);
 
-            if (mActionColor != -1) {
-                snackbarAction.setTextColor(mActionColor);
+    private void updateWindowInsets(Activity targetActivity, Rect outInsets) {
+        outInsets.left = outInsets.top = outInsets.right = outInsets.bottom = 0;
+
+        if (targetActivity == null) {
+            return;
+        }
+
+        ViewGroup decorView = (ViewGroup) targetActivity.getWindow().getDecorView();
+        Display display = targetActivity.getWindowManager().getDefaultDisplay();
+
+        boolean isTranslucent = isNavigationBarTranslucent(targetActivity);
+        boolean isHidden = isNavigationBarHidden(decorView);
+
+        Rect dispFrame = mDisplayFrame;
+        Point realDispSize = mRealDisplaySize;
+        Point dispSize = mDisplaySize;
+
+        decorView.getWindowVisibleDisplayFrame(dispFrame);
+
+        DisplayCompat.getRealSize(display, realDispSize);
+        DisplayCompat.getSize(display, dispSize);
+
+        if (dispSize.x < realDispSize.x) {
+            // navigation bar is placed on right side of the screen
+            if (isTranslucent || isHidden) {
+                int navBarWidth = realDispSize.x - dispSize.x;
+                int overlapWidth = realDispSize.x - dispFrame.right;
+                outInsets.right = Math.max(Math.min(navBarWidth, overlapWidth), 0);
             }
+        } else if (dispSize.y < realDispSize.y) {
+            // navigation bar is placed on bottom side of the screen
 
-            snackbarAction.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (mActionClickListener != null) {
-                        mActionClickListener.onActionClicked(Snackbar.this);
-                    }
-                    if (mShouldDismissOnActionClicked) {
-                        dismiss();
-                    }
-                }
-            });
-            snackbarAction.setMaxLines(mType.getMaxLines());
-        } else {
-            snackbarAction.setVisibility(GONE);
+            if (isTranslucent || isHidden) {
+                int navBarHeight = realDispSize.y - dispSize.y;
+                int overlapHeight = realDispSize.y - dispFrame.bottom;
+                outInsets.bottom = Math.max(Math.min(navBarHeight, overlapHeight), 0);
+            }
         }
-
-        setClickable(true);
-    }
-
-    private void setTextProperties(SnackbarLayout layout) {
-        TextView snackbarText = (TextView) layout.findViewById(R.id.sb__text);
-        snackbarText.setText(mText);
-
-        if (mTextColor != -1) {
-            snackbarText.setTextColor(mTextColor);
-        }
-        snackbarText.setMaxLines(mType.getMaxLines());
-    }
-
-    private void setLayoutBasicParameters(SnackbarLayout layout) {
-        Resources res = getResources();
-        float scale = res.getDisplayMetrics().density;
-        if (res.getBoolean(R.bool.is_phone)) {
-            layout.setMinimumHeight(dpToPx(mType.getMinHeight(), scale));
-            layout.setMaxHeight(dpToPx(mType.getMaxHeight(), scale));
-            layout.setBackgroundColor(mColor);
-        } else {
-            mType = SnackbarType.SINGLE_LINE; // Force single-line
-            layout.setMinimumWidth(res.getDimensionPixelSize(R.dimen.sb__min_width));
-            layout.setMaxWidth(res.getDimensionPixelSize(R.dimen.sb__max_width));
-            layout.setBackgroundResource(R.drawable.sb__bg);
-            GradientDrawable bg = (GradientDrawable) layout.getBackground();
-            bg.setColor(mColor);
-        }
-        if (mDrawable != -1)
-            setBackgroundDrawable(layout, res.getDrawable(mDrawable));
-    }
-
-    private ViewGroup.MarginLayoutParams createParamsWithMargins() {
-        Resources res = getResources();
-        float scale = res.getDisplayMetrics().density;
-        ViewGroup.MarginLayoutParams params;
-        if (res.getBoolean(R.bool.is_phone)) {
-            params = new ViewGroup.MarginLayoutParams(
-                    LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-            params.leftMargin = mMarginLeft != -1 ? mMarginLeft : res.getDimensionPixelOffset(R.dimen.sb__offset);
-            params.topMargin = mMarginTop != -1 ? mMarginTop : res.getDimensionPixelOffset(R.dimen.sb__offset);
-            params.rightMargin = mMarginRight != -1 ? mMarginRight : res.getDimensionPixelOffset(R.dimen.sb__offset);
-            params.bottomMargin = mMarginBottom != -1 ? mMarginBottom : res.getDimensionPixelOffset(R.dimen.sb__offset);
-
-        } else {
-            params = new ViewGroup.MarginLayoutParams(
-                    LayoutParams.WRAP_CONTENT, dpToPx(mType.getMaxHeight(), scale));
-            params.leftMargin = mOffset;
-            params.bottomMargin = mOffset;
-        }
-        return params;
-    }
-
-    private FrameLayout.LayoutParams initFrameLayoutParams() {
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(createParamsWithMargins());
-        params.gravity = mPosition;
-        return params;
-    }
-
-    private LinearLayout.LayoutParams initLinearLayoutParams() {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(createParamsWithMargins());
-        params.gravity = mPosition;
-        return params;
-    }
-
-    private RelativeLayout.LayoutParams initRelativeLayoutParams() {
-        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(createParamsWithMargins());
-        if (mPosition == TOP)
-            params.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
-        else
-            params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
-
-        return params;
     }
 
     private static int dpToPx(int dp, float scale) {
         return (int) (dp * scale + 0.5f);
+    }
+
+    public void showByReplace(Activity targetActivity) {
+        mIsShowingByReplace = true;
+        show(targetActivity);
+    }
+
+    public void showByReplace(ViewGroup parent) {
+        mIsShowingByReplace = true;
+        show(parent, shouldUsePhoneLayout(parent.getContext()));
+    }
+
+    public void showByReplace(ViewGroup parent, boolean usePhoneLayout) {
+        mIsShowingByReplace = true;
+        show(parent, usePhoneLayout);
     }
 
     /**
@@ -592,27 +590,65 @@ public class Snackbar extends SnackbarLayout {
      * @param targetActivity
      */
     public void show(Activity targetActivity) {
+        ViewGroup root = (ViewGroup) targetActivity.findViewById(android.R.id.content);
+        boolean usePhoneLayout = shouldUsePhoneLayout(targetActivity);
+        MarginLayoutParams params = init(targetActivity, targetActivity, root, usePhoneLayout);
+        updateLayoutParamsMargins(targetActivity, params);
+        showInternal(targetActivity, params, root);
+    }
 
-        init(targetActivity);
-        ViewGroup root = getRootView(targetActivity);
+    /**
+     * Displays the {@link Snackbar} at the bottom of the
+     * {@link android.view.ViewGroup} provided.
+     *
+     * @param parent
+     */
+    public void show(ViewGroup parent) {
+        show(parent, shouldUsePhoneLayout(parent.getContext()));
+    }
+
+    /**
+     * Displays the {@link Snackbar} at the bottom of the
+     * {@link android.view.ViewGroup} provided.
+     *
+     * @param parent
+     * @param usePhoneLayout
+     */
+    public void show(ViewGroup parent, boolean usePhoneLayout) {
+        MarginLayoutParams params = init(parent.getContext(), null, parent, usePhoneLayout);
+        updateLayoutParamsMargins(null, params);
+        showInternal(null, params, parent);
+    }
+
+    private void showInternal(Activity targetActivity, MarginLayoutParams params, ViewGroup parent) {
+        parent.removeView(this);
+
+        parent.addView(this, params);
 
         bringToFront();
 
+        // As requested in the documentation for bringToFront()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-            root.requestLayout();
-            root.invalidate();
+            parent.requestLayout();
+            parent.invalidate();
         }
 
         mIsShowing = true;
+        mTargetActivity = targetActivity;
 
         getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
             @Override
             public boolean onPreDraw() {
                 getViewTreeObserver().removeOnPreDrawListener(this);
                 if (mEventListener != null) {
-                    mEventListener.onShow(Snackbar.this);
+                    if (mIsShowingByReplace) {
+                        mEventListener.onShowByReplace(Snackbar.this);
+                    } else {
+                        mEventListener.onShow(Snackbar.this);
+                    }
                     if (!mAnimated) {
                         mEventListener.onShown(Snackbar.this);
+                        mIsShowingByReplace = false; // reset flag
                     }
                 }
                 return true;
@@ -620,11 +656,13 @@ public class Snackbar extends SnackbarLayout {
         });
 
         if (!mAnimated) {
-            startTimer();
+            if (shouldStartTimer()) {
+                startTimer();
+            }
             return;
         }
 
-        Animation slideIn = AnimationUtils.loadAnimation(getContext(), getInAnimation());
+        Animation slideIn = AnimationUtils.loadAnimation(getContext(), R.anim.sb__in);
         slideIn.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
@@ -634,6 +672,7 @@ public class Snackbar extends SnackbarLayout {
             public void onAnimationEnd(Animation animation) {
                 if (mEventListener != null) {
                     mEventListener.onShown(Snackbar.this);
+                    mIsShowingByReplace = false; // reset flag
                 }
 
                 post(new Runnable() {
@@ -644,8 +683,9 @@ public class Snackbar extends SnackbarLayout {
                         if (mTimeRemaining == -1) {
                             mTimeRemaining = getDuration();
                         }
-
-                        startTimer();
+                        if (shouldStartTimer()) {
+                            startTimer();
+                        }
                     }
                 });
             }
@@ -657,35 +697,35 @@ public class Snackbar extends SnackbarLayout {
         startAnimation(slideIn);
     }
 
-    private ViewGroup getRootView(Activity targetActivity) {
-        ViewGroup root = getViewGroup(targetActivity);
+    private boolean shouldStartTimer() {
+        return !isIndefiniteDuration();
+    }
 
-        if (targetActivity.findViewById(mContainerLayoutId) instanceof LinearLayout) {
-            LinearLayout.LayoutParams params = initLinearLayoutParams();
-            root.addView(this, params);
-        } else if (targetActivity.findViewById(mContainerLayoutId) instanceof RelativeLayout) {
-            RelativeLayout.LayoutParams params = initRelativeLayoutParams();
-            root.addView(this, params);
-        } else {
-            FrameLayout.LayoutParams params = initFrameLayoutParams();
-            root.addView(this, params);
+    private boolean isIndefiniteDuration() {
+        return getDuration() == SnackbarDuration.LENGTH_INDEFINITE.getDuration();
+    }
+
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+    private boolean isNavigationBarHidden(ViewGroup root) {
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+            return false;
         }
-        return root;
+
+        int viewFlags = root.getWindowSystemUiVisibility();
+        return (viewFlags & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION) ==
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
     }
 
-    private ViewGroup getViewGroup(Activity targetActivity) {
-        if (mContainerLayoutId != -1)
-            try {
+    private boolean isNavigationBarTranslucent(Activity targetActivity) {
 
-                return (ViewGroup) targetActivity.findViewById(mContainerLayoutId);
-            } catch (Exception e) {
-                Log.e(LOG_TAG, "ContainerLayoutId must be or inherit a Layout. \n" + e.getLocalizedMessage());
-                return (ViewGroup) targetActivity.findViewById(android.R.id.content);
-            }
-        else
-            return (ViewGroup) targetActivity.findViewById(android.R.id.content);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+            return false;
+        }
+
+        int flags = targetActivity.getWindow().getAttributes().flags;
+        return (flags & WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION) != 0;
     }
-
 
     private void startTimer() {
         postDelayed(mDismissRunnable, getDuration());
@@ -693,6 +733,11 @@ public class Snackbar extends SnackbarLayout {
 
     private void startTimer(long duration) {
         postDelayed(mDismissRunnable, duration);
+    }
+
+    public void dismissByReplace() {
+        mIsReplacePending = true;
+        dismiss();
     }
 
     public void dismiss() {
@@ -707,7 +752,11 @@ public class Snackbar extends SnackbarLayout {
         mIsDismissing = true;
 
         if (mEventListener != null && mIsShowing) {
-            mEventListener.onDismiss(Snackbar.this);
+            if (mIsReplacePending) {
+                mEventListener.onDismissByReplace(Snackbar.this);
+            } else {
+                mEventListener.onDismiss(Snackbar.this);
+            }
         }
 
         if (!animate) {
@@ -715,7 +764,7 @@ public class Snackbar extends SnackbarLayout {
             return;
         }
 
-        final Animation slideOut = AnimationUtils.loadAnimation(getContext(), getOutAnimation());
+        final Animation slideOut = AnimationUtils.loadAnimation(getContext(), R.anim.sb__out);
         slideOut.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
@@ -748,6 +797,68 @@ public class Snackbar extends SnackbarLayout {
             mEventListener.onDismissed(this);
         }
         mIsShowing = false;
+        mIsReplacePending = false;
+        mTargetActivity = null;
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (mDismissRunnable != null) {
+            removeCallbacks(mDismissRunnable);
+        }
+        if (mRefreshLayoutParamsMarginsRunnable != null) {
+            removeCallbacks(mRefreshLayoutParamsMarginsRunnable);
+        }
+    }
+
+    void dispatchOnWindowSystemUiVisibilityChangedCompat(int visible) {
+        onWindowSystemUiVisibilityChangedCompat(visible);
+    }
+
+    protected void onWindowSystemUiVisibilityChangedCompat(int visible) {
+        if (mRefreshLayoutParamsMarginsRunnable != null) {
+            post(mRefreshLayoutParamsMarginsRunnable);
+        }
+    }
+
+    protected void refreshLayoutParamsMargins() {
+        if (mIsDismissing) {
+            return;
+        }
+
+        ViewGroup parent = (ViewGroup) getParent();
+        if (parent == null) {
+            return;
+        }
+
+        MarginLayoutParams params = (MarginLayoutParams) getLayoutParams();
+
+        updateLayoutParamsMargins(mTargetActivity, params);
+
+        setLayoutParams(params);
+    }
+
+    protected void updateLayoutParamsMargins(Activity targetActivity, MarginLayoutParams params) {
+        if (mUsePhoneLayout) {
+            // Phone
+            params.topMargin = 0;
+            params.rightMargin = 0;
+            params.leftMargin = 0;
+            params.bottomMargin = 0;
+        } else {
+            // Tablet/desktop
+            params.topMargin = 0;
+            params.rightMargin = 0;
+            params.leftMargin = mOffset;
+            params.bottomMargin = mOffset;
+        }
+
+        // Add bottom/right margin when navigation bar is hidden or translucent
+        updateWindowInsets(targetActivity, mWindowInsets);
+
+        params.rightMargin += mWindowInsets.right;
+        params.bottomMargin += mWindowInsets.bottom;
     }
 
     public int getActionColor() {
@@ -779,6 +890,17 @@ public class Snackbar extends SnackbarLayout {
     }
 
     /**
+     * @return whether the action button has been clicked. In other words, this method will let
+     * you know if {@link com.nispok.snackbar.listeners.ActionClickListener#onActionClicked(Snackbar)}
+     * was called. This is useful, for instance, if you want to know during
+     * {@link com.nispok.snackbar.listeners.EventListener#onDismiss(Snackbar)} if the
+     * {@link com.nispok.snackbar.Snackbar} is being dismissed because of its action click
+     */
+    public boolean isActionClicked() {
+        return mActionClicked;
+    }
+
+    /**
      * @return the pixel offset of this {@link com.nispok.snackbar.Snackbar} from the left and
      * bottom of the {@link android.app.Activity}.
      */
@@ -794,14 +916,18 @@ public class Snackbar extends SnackbarLayout {
         return mShouldDismissOnActionClicked;
     }
 
-    public static int TOP = Gravity.TOP;
-    public static int BOTTOM = Gravity.BOTTOM;
-
     /**
      * @return true if this {@link com.nispok.snackbar.Snackbar} is currently showing
      */
     public boolean isShowing() {
         return mIsShowing;
+    }
+
+    /**
+     * @return true if this {@link com.nispok.snackbar.Snackbar} is dismissing.
+     */
+    public boolean isDimissing() {
+        return mIsDismissing;
     }
 
     /**
@@ -816,8 +942,8 @@ public class Snackbar extends SnackbarLayout {
      * to enter the view
      */
     @AnimRes
-    public int getInAnimationResource() {
-        return getInAnimation();
+    public static int getInAnimationResource() {
+        return R.anim.sb__in;
     }
 
     /**
@@ -825,23 +951,7 @@ public class Snackbar extends SnackbarLayout {
      * to exit the view
      */
     @AnimRes
-    public int getOutAnimationResource() {
-        return getOutAnimation();
-    }
-
-    /**
-     * Set a Background Drawable using the appropriate Android version api call
-     *
-     * @param view
-     * @param drawable
-     */
-
-    public static void setBackgroundDrawable(View view, Drawable drawable) {
-        int sdk = android.os.Build.VERSION.SDK_INT;
-        if (sdk < android.os.Build.VERSION_CODES.JELLY_BEAN) {
-            view.setBackgroundDrawable(drawable);
-        } else {
-            view.setBackground(drawable);
-        }
+    public static int getOutAnimationResource() {
+        return R.anim.sb__out;
     }
 }
