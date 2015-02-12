@@ -32,11 +32,11 @@ public class Snackbar extends SnackbarLayout {
 	public static int TOP = Gravity.TOP;
 	public static int BOTTOM = Gravity.BOTTOM;
 	private int mPosition = BOTTOM;
-	private int mUndefinedColor = -10000;
-	private int mColor = mUndefinedColor;
-	private int mTextColor = mUndefinedColor;
-	private int mActionColor = mUndefinedColor;
-	private SnackbarType mType = SnackbarType.SINGLE_LINE;
+    private int mUndefinedColor = -10000;
+    private int mColor = mUndefinedColor;
+    private int mTextColor = mUndefinedColor;
+    private int mActionColor = mUndefinedColor;
+    private SnackbarType mType = SnackbarType.SINGLE_LINE;
     private SnackbarDuration mDuration = SnackbarDuration.LENGTH_LONG;
     private CharSequence mText;
     private int mOffset;
@@ -45,7 +45,7 @@ public class Snackbar extends SnackbarLayout {
 	private int mMarginBottom = -1;
 	private int mMarginLeft = -1;
 	private int mMarginRight = -1;
-	private long mSnackbarStart;
+    private long mSnackbarStart;
     private long mSnackbarFinish;
     private long mTimeRemaining = -1;
     private CharSequence mActionLabel;
@@ -68,52 +68,51 @@ public class Snackbar extends SnackbarLayout {
     private Point mDisplaySize = new Point();
     private Point mRealDisplaySize = new Point();
     private Activity mTargetActivity;
-	private boolean mUsePhoneLayout;
-	private Runnable mDismissRunnable = new Runnable() {
+    private boolean mUsePhoneLayout;
+    private Runnable mDismissRunnable = new Runnable() {
         @Override
         public void run() {
             dismiss();
         }
     };
-	private Runnable mRefreshLayoutParamsMarginsRunnable = new Runnable() {
-		@Override
-		public void run () {
-			refreshLayoutParamsMargins();
-		}
-	};
+    private Runnable mRefreshLayoutParamsMarginsRunnable = new Runnable() {
+        @Override
+        public void run() {
+            refreshLayoutParamsMargins();
+        }
+    };
+    private Snackbar(Context context) {
+        super(context);
 
-	private Snackbar ( Context context ) {
-		super(context);
+        // inject helper view to use onWindowSystemUiVisibilityChangedCompat() event
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            addView(new SnackbarHelperChildViewJB(getContext()));
+        }
+    }
 
-		// inject helper view to use onWindowSystemUiVisibilityChangedCompat() event
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-			addView(new SnackbarHelperChildViewJB(getContext()));
-		}
-	}
+    public static Snackbar with(Context context) {
+        return new Snackbar(context);
+    }
 
-	public static Snackbar with ( Context context ) {
-		return new Snackbar(context);
-	}
+    static boolean shouldUsePhoneLayout(Context context) {
+        if (context == null) {
+            return true;
+        } else {
+            return context.getResources().getBoolean(R.bool.sb__is_phone);
+        }
+    }
 
-	static boolean shouldUsePhoneLayout ( Context context ) {
-		if (context == null) {
-			return true;
-		} else {
-			return context.getResources().getBoolean(R.bool.sb__is_phone);
-		}
-	}
-
-	private static int dpToPx ( int dp, float scale ) {
-		return (int) (dp * scale + 0.5f);
-	}
+    private static int dpToPx(int dp, float scale) {
+        return (int) (dp * scale + 0.5f);
+    }
 
     /**
      * @return the animation resource used by this {@link com.nispok.snackbar.Snackbar} instance
      * to enter the view
      */
     @AnimRes
-    public static int getInAnimationResource () {
-	    return R.anim.snackbar_top_in;
+    public static int getInAnimationResource() {
+        return R.anim.snackbar_top_in;
     }
 
     /**
@@ -121,8 +120,8 @@ public class Snackbar extends SnackbarLayout {
      * to exit the view
      */
     @AnimRes
-    public static int getOutAnimationResource () {
-	    return R.anim.snackbar_top_out;
+    public static int getOutAnimationResource() {
+        return R.anim.snackbar_top_out;
     }
 
 	/**
@@ -131,7 +130,7 @@ public class Snackbar extends SnackbarLayout {
 	 * @param view
 	 * @param drawable
 	 */
-	public static void setBackgroundDrawable ( View view, Drawable drawable ) {
+	public static void setBackgroundDrawable(View view, Drawable drawable) {
 		int sdk = android.os.Build.VERSION.SDK_INT;
 		if (sdk < android.os.Build.VERSION_CODES.JELLY_BEAN) {
 			view.setBackgroundDrawable(drawable);
@@ -140,127 +139,121 @@ public class Snackbar extends SnackbarLayout {
 		}
 	}
 
-	/**
-	 * Sets the type of {@link Snackbar} to be displayed.
-	 *
-	 * @param type the {@link SnackbarType} of this instance
-	 * @return
-	 */
-	public Snackbar type ( SnackbarType type ) {
-		mType = type;
-		return this;
-	}
+    /**
+     * Sets the type of {@link Snackbar} to be displayed.
+     *
+     * @param type the {@link SnackbarType} of this instance
+     * @return
+     */
+    public Snackbar type(SnackbarType type) {
+        mType = type;
+        return this;
+    }
 
-	/**
-	 * Sets the text to be displayed in this {@link Snackbar}
-	 *
-	 * @param text
-	 *
-	 * @return
-	 */
-	public Snackbar text ( CharSequence text ) {
-		mText = text;
-		return this;
-	}
+    /**
+     * Sets the text to be displayed in this {@link Snackbar}
+     *
+     * @param text
+     * @return
+     */
+    public Snackbar text(CharSequence text) {
+        mText = text;
+        return this;
+    }
 
-	/**
-	 * Sets the text to be displayed in this {@link Snackbar}
-	 *
-	 * @param resId
-	 * @return
-	 */
-	public Snackbar text ( @StringRes int resId ) {
-		return text(getContext().getText(resId));
-	}
+    /**
+     * Sets the text to be displayed in this {@link Snackbar}
+     *
+     * @param resId
+     * @return
+     */
+    public Snackbar text(@StringRes int resId) {
+        return text(getContext().getText(resId));
+    }
 
-	/**
-	 * Sets the background color of this {@link Snackbar}
-	 *
-	 * @param color
-	 * @return
-	 */
-	public Snackbar color ( int color ) {
-		mColor = color;
-		return this;
-	}
+    /**
+     * Sets the background color of this {@link Snackbar}
+     *
+     * @param color
+     * @return
+     */
+    public Snackbar color(int color) {
+        mColor = color;
+        return this;
+    }
 
-	/**
-	 * Sets the background color of this {@link Snackbar}
-	 *
-	 * @param resId
-	 * @return
-	 */
-	public Snackbar colorResource ( @ColorRes int resId ) {
-		return color(getResources().getColor(resId));
-	}
+    /**
+     * Sets the background color of this {@link Snackbar}
+     *
+     * @param resId
+     * @return
+     */
+    public Snackbar colorResource(@ColorRes int resId) {
+        return color(getResources().getColor(resId));
+    }
 
 	/**
 	 * Sets the background color of this {@link Snackbar}
 	 *
 	 * @param drawable
-	 *
 	 * @return
 	 */
-	public Snackbar shape ( int drawable ) {
+	public Snackbar shape(int drawable) {
 		mDrawable = drawable;
 		return this;
 	}
 
-	/**
-	 * Sets the text color of this {@link Snackbar}
-	 *
-	 * @param textColor
-	 *
-	 * @return
-	 */
-	public Snackbar textColor ( int textColor ) {
-		mTextColor = textColor;
-		return this;
-	}
+    /**
+     * Sets the text color of this {@link Snackbar}
+     *
+     * @param textColor
+     * @return
+     */
+    public Snackbar textColor(int textColor) {
+        mTextColor = textColor;
+        return this;
+    }
 
-	/**
-	 * Sets the text color of this {@link Snackbar}
-	 *
-	 * @param resId
-	 *
-	 * @return
-	 */
-	public Snackbar textColorResource ( @ColorRes int resId ) {
-		return textColor(getResources().getColor(resId));
-	}
+    /**
+     * Sets the text color of this {@link Snackbar}
+     *
+     * @param resId
+     * @return
+     */
+    public Snackbar textColorResource(@ColorRes int resId) {
+        return textColor(getResources().getColor(resId));
+    }
 
-	/**
-	 * Sets the action label to be displayed, if any. Note that if this is not set, the action button will not be
-	 * displayed
-	 *
-	 * @param actionButtonLabel
-	 *
-	 * @return
-	 */
-	public Snackbar actionLabel ( CharSequence actionButtonLabel ) {
-		mActionLabel = actionButtonLabel;
-		return this;
-	}
+    /**
+     * Sets the action label to be displayed, if any. Note that if this is not set, the action
+     * button will not be displayed
+     *
+     * @param actionButtonLabel
+     * @return
+     */
+    public Snackbar actionLabel(CharSequence actionButtonLabel) {
+        mActionLabel = actionButtonLabel;
+        return this;
+    }
 
-	/**
-	 * Sets the action label to be displayed, if any. Note that if this is not set, the action
-	 * button will not be displayed
-	 *
-	 * @param resId
-	 * @return
-	 */
-	public Snackbar actionLabel ( @StringRes int resId) {
-		return actionLabel(getContext().getString(resId));
-	}
+    /**
+     * Sets the action label to be displayed, if any. Note that if this is not set, the action
+     * button will not be displayed
+     *
+     * @param resId
+     * @return
+     */
+    public Snackbar actionLabel(@StringRes int resId) {
+        return actionLabel(getContext().getString(resId));
+    }
 
 	/**
 	 * Set the Gravity of the snackbar. Recomended values Gravity.TOP and Gravity.BOTTOM
 	 *
 	 * @param position
-	 *
 	 * @return
 	 */
-	public Snackbar position ( int position ) {
+	public Snackbar position(int position) {
 		mPosition = position;
 		return this;
 	}
@@ -268,23 +261,21 @@ public class Snackbar extends SnackbarLayout {
 	/**
 	 * @return the specific in animation depending if the gravity is Top or Bottom
 	 */
-	private int getInAnimation () {
-		if (mPosition == Snackbar.TOP) {
+	private int getInAnimation() {
+		if (mPosition == Snackbar.TOP)
 			return R.anim.snackbar_top_in;
-		} else {
+		else
 			return R.anim.snackbar_bottom_in;
-		}
 	}
 
 	/**
 	 * @return the specific out animation depending if the gravity is Top or Bottom
 	 */
-	private int getOutAnimation () {
-		if (mPosition == Snackbar.TOP) {
+	private int getOutAnimation() {
+		if (mPosition == Snackbar.TOP)
 			return R.anim.snackbar_top_out;
-		} else {
+		else
 			return R.anim.snackbar_bottom_out;
-		}
 	}
 
 	/**
@@ -293,7 +284,7 @@ public class Snackbar extends SnackbarLayout {
 	 * @param margin size of the margins in pixels
 	 * @return
 	 */
-	public Snackbar margin ( int margin ) {
+	public Snackbar margin(int margin) {
 		return margin(margin, margin, margin, margin);
 	}
 
@@ -302,10 +293,9 @@ public class Snackbar extends SnackbarLayout {
 	 *
 	 * @param marginLR size of the left and right margins in pixels
 	 * @param marginTB size of the top and bottom margins in pixels
-	 *
 	 * @return
 	 */
-	public Snackbar margin ( int marginLR, int marginTB ) {
+	public Snackbar margin(int marginLR, int marginTB) {
 		return margin(marginLR, marginTB, marginLR, marginTB);
 	}
 
@@ -316,10 +306,9 @@ public class Snackbar extends SnackbarLayout {
 	 * @param marginTop    size of the top margin in pixels
 	 * @param marginRight  size of the right margin in pixels
 	 * @param marginBottom size of the bottom margin in pixels
-	 *
 	 * @return
 	 */
-	public Snackbar margin ( int marginLeft, int marginTop, int marginRight, int marginBottom ) {
+	public Snackbar margin(int marginLeft, int marginTop, int marginRight, int marginBottom) {
 		mMarginLeft = marginLeft;
 		mMarginTop = marginTop;
 		mMarginBottom = marginBottom;
@@ -328,28 +317,28 @@ public class Snackbar extends SnackbarLayout {
 		return this;
 	}
 
-	/**
-	 * Sets the color of the action button label. Note that you must set a button label with
-	 * {@link Snackbar#actionLabel(CharSequence)} for this button to be displayed
-	 *
+    /**
+     * Sets the color of the action button label. Note that you must set a button label with
+     * {@link Snackbar#actionLabel(CharSequence)} for this button to be displayed
+     *
      * @param actionColor
-	 * @return
-	 */
-	public Snackbar actionColor ( int actionColor ) {
-		mActionColor = actionColor;
-		return this;
-	}
+     * @return
+     */
+    public Snackbar actionColor(int actionColor) {
+        mActionColor = actionColor;
+        return this;
+    }
 
-	/**
-	 * Sets the color of the action button label. Note that you must set a button label with
-	 * {@link Snackbar#actionLabel(CharSequence)} for this button to be displayed
-	 *
-	 * @param resId
-	 * @return
-	 */
-	public Snackbar actionColorResource ( @ColorRes int resId ) {
-		return actionColor(getResources().getColor(resId));
-	}
+    /**
+     * Sets the color of the action button label. Note that you must set a button label with
+     * {@link Snackbar#actionLabel(CharSequence)} for this button to be displayed
+     *
+     * @param resId
+     * @return
+     */
+    public Snackbar actionColorResource(@ColorRes int resId) {
+        return actionColor(getResources().getColor(resId));
+    }
 
     /**
      * Determines whether this {@link Snackbar} should dismiss when the action button is touched
@@ -357,710 +346,714 @@ public class Snackbar extends SnackbarLayout {
      * @param shouldDismiss
      * @return
      */
-    public Snackbar dismissOnActionClicked ( boolean shouldDismiss ) {
-	    mShouldDismissOnActionClicked = shouldDismiss;
-	    return this;
+    public Snackbar dismissOnActionClicked(boolean shouldDismiss) {
+        mShouldDismissOnActionClicked = shouldDismiss;
+        return this;
     }
 
-	/**
-	 * Sets the listener to be called when the {@link Snackbar} action is
-	 * selected. Note that you must set a button label with
-	 * {@link Snackbar#actionLabel(CharSequence)} for this button to be displayed
-	 *
-	 * @param listener
+    /**
+     * Sets the listener to be called when the {@link Snackbar} action is
+     * selected. Note that you must set a button label with
+     * {@link Snackbar#actionLabel(CharSequence)} for this button to be displayed
+     *
+     * @param listener
      * @return
-	 */
-	public Snackbar actionListener ( ActionClickListener listener ) {
-		mActionClickListener = listener;
-		return this;
-	}
-
-	/**
-	 * Determines whether this {@link Snackbar} should allow the action button to be
-	 * clicked multiple times
-	 *
-	 * @param shouldAllow
-	 * @return
      */
-    public Snackbar allowMultipleActionClicks ( boolean shouldAllow ) {
-
-	    mShouldAllowMultipleActionClicks = shouldAllow;
-	    return this;
+    public Snackbar actionListener(ActionClickListener listener) {
+        mActionClickListener = listener;
+        return this;
     }
 
-	/**
-	 * Sets the listener to be called when the {@link Snackbar} is dismissed.
-	 *
-	 * @param listener
-	 * @return
-	 */
-	public Snackbar eventListener ( EventListener listener ) {
-		mEventListener = listener;
-		return this;
-	}
+    /**
+     * Determines whether this {@link Snackbar} should allow the action button to be
+     * clicked multiple times
+     *
+     * @param shouldAllow
+     * @return
+     */
+    public Snackbar allowMultipleActionClicks(boolean shouldAllow) {
 
-	/**
-	 * Sets on/off animation for this {@link Snackbar}
-	 *
+        mShouldAllowMultipleActionClicks = shouldAllow;
+        return this;
+    }
+
+    /**
+     * Sets the listener to be called when the {@link Snackbar} is dismissed.
+     *
+     * @param listener
+     * @return
+     */
+    public Snackbar eventListener(EventListener listener) {
+        mEventListener = listener;
+        return this;
+    }
+
+    /**
+     * Sets on/off animation for this {@link Snackbar}
+     *
      * @param withAnimation
-	 * @return
-	 */
-	public Snackbar animation ( boolean withAnimation ) {
-		mAnimated = withAnimation;
-		return this;
-	}
+     * @return
+     */
+    public Snackbar animation(boolean withAnimation) {
+        mAnimated = withAnimation;
+        return this;
+    }
 
-	/**
-	 * Determines whether this {@link com.nispok.snackbar.Snackbar} can be swiped off from the screen
-	 *
-	 * @param canSwipeToDismiss
-	 * @return
-	 */
-	public Snackbar swipeToDismiss ( boolean canSwipeToDismiss ) {
-		mCanSwipeToDismiss = canSwipeToDismiss;
-		return this;
-	}
+    /**
+     * Determines whether this {@link com.nispok.snackbar.Snackbar} can be swiped off from the screen
+     *
+     * @param canSwipeToDismiss
+     * @return
+     */
+    public Snackbar swipeToDismiss(boolean canSwipeToDismiss) {
+        mCanSwipeToDismiss = canSwipeToDismiss;
+        return this;
+    }
 
-	/**
-	 * Sets the duration of this {@link Snackbar}. See
-	 * {@link Snackbar.SnackbarDuration} for available options
+    /**
+     * Sets the duration of this {@link Snackbar}. See
+     * {@link Snackbar.SnackbarDuration} for available options
      *
      * @param duration
-	 * @return
-	 */
-	public Snackbar duration(SnackbarDuration duration ) {
-		mDuration = duration;
-		return this;
-	}
-
-	/**
-	 * Sets a custom duration of this {@link Snackbar}
-	 *
-	 * @param duration custom duration. Value must be greater than 0 or it will be ignored
-	 * @return
-	 */
-	public Snackbar duration ( long duration ) {
-		mCustomDuration = duration > 0 ? duration : mCustomDuration;
-		return this;
-	}
-
-	/**
-	 * Attaches this {@link Snackbar} to an AbsListView (ListView, GridView, ExpandableListView) so it dismisses when
-	 * the list is scrolled
-	 *
-	 * @param absListView
-	 *
-	 * @return
-	 */
-	public Snackbar attachToAbsListView ( AbsListView absListView ) {
-		absListView.setOnScrollListener(new AbsListView.OnScrollListener() {
-			@Override
-			public void onScrollStateChanged ( AbsListView view, int scrollState ) {
-				dismiss();
-			}
-
-			@Override
-			public void onScroll ( AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount ) {
-			}
-		});
-
-		return this;
-	}
-
-	/**
-	 * Attaches this {@link Snackbar} to a RecyclerView so it dismisses when the list is scrolled
-	 *
-	 * @param recyclerView The RecyclerView instance to attach to.
-	 *
-	 * @return
-	 */
-	public Snackbar attachToRecyclerView ( View recyclerView ) {
-
-		try {
-			Class.forName("android.support.v7.widget.RecyclerView");
-
-			// We got here, so now we can safely check
-			RecyclerUtil.setScrollListener(this, recyclerView);
-		} catch (ClassNotFoundException ignored) {
-			throw new IllegalArgumentException("RecyclerView not found. Did you add it to your dependencies?");
-		}
-
-		return this;
-	}
-
-	/**
-	 * Use a custom typeface for this Snackbar's text
-	 *
-	 * @param typeface
-	 * @return
-	 */
-	public Snackbar textTypeface ( Typeface typeface ) {
-		mTextTypeface = typeface;
-		return this;
-	}
-
-	/**
-	 * Use a custom typeface for this Snackbar's action label
-	 *
-	 * @param typeface
-	 * @return
-	 */
-	public Snackbar actionLabelTypeface ( Typeface typeface ) {
-		mActionTypeface = typeface;
-		return this;
-	}
-
-	private MarginLayoutParams createMarginLayoutParams ( ViewGroup viewGroup, int width, int height ) {
-		if (viewGroup instanceof FrameLayout) {
-			FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(width, height);
-			params.gravity = mPosition;
-			return params;
-		} else if (viewGroup instanceof RelativeLayout) {
-			RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(width, height);
-
-			if (mPosition == TOP) {
-				params.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
-			} else {
-				params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
-			}
-
-			return params;
-		} else if (viewGroup instanceof LinearLayout) {
-			LinearLayout.LayoutParams params = new LayoutParams(width, height);
-			params.gravity = mPosition;
-			return params;
-		} else {
-			throw new IllegalStateException("Requires FrameLayout or RelativeLayout for the parent of Snackbar");
-		}
-	}
-
-	private MarginLayoutParams init ( Context context, Activity targetActivity, ViewGroup parent, boolean usePhoneLayout ) {
-		SnackbarLayout layout = (SnackbarLayout) LayoutInflater.from(context).inflate(R.layout.sb__template, this, true);
-
-		Resources res = getResources();
-		mColor = mColor != mUndefinedColor ? mColor : res.getColor(R.color.sb__background);
-		mPosition = mPosition != -1 ? mPosition : BOTTOM;
-		mOffset = res.getDimensionPixelOffset(R.dimen.sb__offset);
-		mUsePhoneLayout = usePhoneLayout;
-		float scale = res.getDisplayMetrics().density;
-
-		MarginLayoutParams params;
-		if (mUsePhoneLayout) {
-			// Phone
-			layout.setMinimumHeight(dpToPx(mType.getMinHeight(), scale));
-			layout.setMaxHeight(dpToPx(mType.getMaxHeight(), scale));
-			layout.setBackgroundColor(mColor);
-			params = createMarginLayoutParams(parent, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
-		} else {
-			// Tablet/desktop
-			mType = SnackbarType.SINGLE_LINE; // Force single-line
-			layout.setMinimumWidth(res.getDimensionPixelSize(R.dimen.sb__min_width));
-			layout.setMaxWidth(res.getDimensionPixelSize(R.dimen.sb__max_width));
-			layout.setBackgroundResource(R.drawable.sb__bg);
-			GradientDrawable bg = (GradientDrawable) layout.getBackground();
-			bg.setColor(mColor);
-
-			params = createMarginLayoutParams(parent, FrameLayout.LayoutParams.WRAP_CONTENT, dpToPx(mType.getMaxHeight(), scale));
-		}
-
-		if (mDrawable != -1) {
-			setBackgroundDrawable(layout, res.getDrawable(mDrawable));
-		}
-
-		TextView snackbarText = (TextView) layout.findViewById(R.id.sb__text);
-		snackbarText.setText(mText);
-		snackbarText.setTypeface(mTextTypeface);
-
-		if (mTextColor != mUndefinedColor) {
-			snackbarText.setTextColor(mTextColor);
-		}
-
-		snackbarText.setMaxLines(mType.getMaxLines());
-
-		TextView snackbarAction = (TextView) layout.findViewById(R.id.sb__action);
-		if (!TextUtils.isEmpty(mActionLabel)) {
-			requestLayout();
-			snackbarAction.setText(mActionLabel);
-			snackbarAction.setTypeface(mActionTypeface);
-
-			if (mActionColor != mUndefinedColor) {
-				snackbarAction.setTextColor(mActionColor);
-			}
-
-			snackbarAction.setOnClickListener(new OnClickListener() {
-				@Override
-				public void onClick ( View view ) {
-					if (mActionClickListener != null) {
-
-						// Before calling the onActionClicked() callback, make sure:
-						// 1) The snackbar is not dismissing
-						// 2) If we aren't allowing multiple clicks, that this is the first click
-						if (!mIsDismissing && (!mActionClicked || mShouldAllowMultipleActionClicks)) {
-
-							mActionClickListener.onActionClicked(Snackbar.this);
-							mActionClicked = true;
-						}
-					}
-					if (mShouldDismissOnActionClicked) {
-						dismiss();
-					}
-				}
-			});
-			snackbarAction.setMaxLines(mType.getMaxLines());
-		} else {
-			snackbarAction.setVisibility(GONE);
-		}
-
-		setClickable(true);
-
-		if (mCanSwipeToDismiss && res.getBoolean(R.bool.sb__is_swipeable)) {
-			setOnTouchListener(new SwipeDismissTouchListener(this, null, new SwipeDismissTouchListener.DismissCallbacks() {
-				@Override
-				public boolean canDismiss ( Object token ) {
-					return true;
-				}
-
-				@Override
-				public void onDismiss ( View view, Object token ) {
-					if (view != null) {
-						dismiss(false);
-					}
-				}
-
-				@Override
-				public void pauseTimer ( boolean shouldPause ) {
-					if (isIndefiniteDuration()) {
-						return;
-					}
-					if (shouldPause) {
-						removeCallbacks(mDismissRunnable);
-
-						mSnackbarFinish = System.currentTimeMillis();
-					} else {
-						mTimeRemaining -= (mSnackbarFinish - mSnackbarStart);
-
-						startTimer(mTimeRemaining);
-					}
-				}
-			}));
-		}
-
-		return params;
-	}
-
-	private void updateWindowInsets ( Activity targetActivity, Rect outInsets ) {
-		outInsets.left = outInsets.top = outInsets.right = outInsets.bottom = 0;
-
-		if (targetActivity == null) {
-			return;
-		}
-
-		ViewGroup decorView = (ViewGroup) targetActivity.getWindow().getDecorView();
-		Display display = targetActivity.getWindowManager().getDefaultDisplay();
-
-		boolean isTranslucent = isNavigationBarTranslucent(targetActivity);
-		boolean isHidden = isNavigationBarHidden(decorView);
-
-		Rect dispFrame = mDisplayFrame;
-		Point realDispSize = mRealDisplaySize;
-		Point dispSize = mDisplaySize;
-
-		decorView.getWindowVisibleDisplayFrame(dispFrame);
-
-		DisplayCompat.getRealSize(display, realDispSize);
-		DisplayCompat.getSize(display, dispSize);
-
-		if (dispSize.x < realDispSize.x) {
-			// navigation bar is placed on right side of the screen
-			if (isTranslucent || isHidden) {
-				int navBarWidth = realDispSize.x - dispSize.x;
-				int overlapWidth = realDispSize.x - dispFrame.right;
-				outInsets.right = Math.max(Math.min(navBarWidth, overlapWidth), 0);
-			}
-		} else if (dispSize.y < realDispSize.y) {
-			// navigation bar is placed on bottom side of the screen
-
-			if (isTranslucent || isHidden) {
-				int navBarHeight = realDispSize.y - dispSize.y;
-				int overlapHeight = realDispSize.y - dispFrame.bottom;
-				outInsets.bottom = Math.max(Math.min(navBarHeight, overlapHeight), 0);
-			}
-		}
-	}
-
-	public void showByReplace ( Activity targetActivity ) {
-		mIsShowingByReplace = true;
-		show(targetActivity);
-	}
-
-	public void showByReplace ( ViewGroup parent ) {
-		mIsShowingByReplace = true;
-		show(parent, shouldUsePhoneLayout(parent.getContext()));
-	}
-
-    public void showByReplace(ViewGroup parent, boolean usePhoneLayout ) {
-	    mIsShowingByReplace = true;
-	    show(parent, usePhoneLayout);
+     * @return
+     */
+    public Snackbar duration(SnackbarDuration duration) {
+        mDuration = duration;
+        return this;
     }
 
-	/**
-	 * Displays the {@link Snackbar} at the bottom of the {@link android.app.Activity} provided.
-	 *
-	 * @param targetActivity
-	 */
-	public void show ( Activity targetActivity ) {
-		ViewGroup root = (ViewGroup) targetActivity.findViewById(android.R.id.content);
-		boolean usePhoneLayout = shouldUsePhoneLayout(targetActivity);
-		MarginLayoutParams params = init(targetActivity, targetActivity, root, usePhoneLayout);
-		updateLayoutParamsMargins(targetActivity, params);
-		showInternal(targetActivity, params, root);
-	}
+    /**
+     * Sets a custom duration of this {@link Snackbar}
+     *
+     * @param duration custom duration. Value must be greater than 0 or it will be ignored
+     * @return
+     */
+    public Snackbar duration(long duration) {
+        mCustomDuration = duration > 0 ? duration : mCustomDuration;
+        return this;
+    }
 
-	/**
-	 * Displays the {@link Snackbar} at the bottom of the
-	 * {@link android.view.ViewGroup} provided.
-	 *
-	 * @param parent
-	 */
-	public void show ( ViewGroup parent ) {
-		show(parent, shouldUsePhoneLayout(parent.getContext()));
-	}
-
-	/**
-	 * Displays the {@link Snackbar} at the bottom of the {@link android.view.ViewGroup} provided.
-	 *
-	 * @param parent
-	 * @param usePhoneLayout
-	 */
-	public void show ( ViewGroup parent, boolean usePhoneLayout ) {
-		MarginLayoutParams params = init(parent.getContext(), null, parent, usePhoneLayout);
-		updateLayoutParamsMargins(null, params);
-		showInternal(null, params, parent);
-	}
-
-	private void showInternal ( Activity targetActivity, MarginLayoutParams params, ViewGroup parent ) {
-		parent.removeView(this);
-
-		parent.addView(this, params);
-
-		bringToFront();
-
-		// As requested in the documentation for bringToFront()
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-			parent.requestLayout();
-			parent.invalidate();
-		}
-
-		mIsShowing = true;
-		mTargetActivity = targetActivity;
-
-		getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-			@Override
-			public boolean onPreDraw () {
-				getViewTreeObserver().removeOnPreDrawListener(this);
-				if (mEventListener != null) {
-					if (mIsShowingByReplace) {
-						mEventListener.onShowByReplace(Snackbar.this);
-					} else {
-						mEventListener.onShow(Snackbar.this);
-					}
-					if (!mAnimated) {
-						mEventListener.onShown(Snackbar.this);
-						mIsShowingByReplace = false; // reset flag
-					}
-				}
-				return true;
-			}
-		});
-
-		if (!mAnimated) {
-			if (shouldStartTimer()) {
-				startTimer();
-			}
-			return;
-		}
-
-		Animation slideIn = AnimationUtils.loadAnimation(getContext(), mPosition == TOP ? R.anim.snackbar_top_in : R.anim.snackbar_bottom_in);
-		slideIn.setAnimationListener(new Animation.AnimationListener() {
-			@Override
-			public void onAnimationStart ( Animation animation ) {
-			}
-
-			@Override
-			public void onAnimationEnd ( Animation animation ) {
-				if (mEventListener != null) {
-					mEventListener.onShown(Snackbar.this);
-					mIsShowingByReplace = false; // reset flag
-				}
-
-				post(new Runnable() {
-					@Override
-					public void run () {
-						mSnackbarStart = System.currentTimeMillis();
-
-						if (mTimeRemaining == -1) {
-							mTimeRemaining = getDuration();
-						}
-						if (shouldStartTimer()) {
-							startTimer();
-						}
-					}
-				});
-			}
+    /**
+     * Attaches this {@link Snackbar} to an AbsListView (ListView, GridView, ExpandableListView) so
+     * it dismisses when the list is scrolled
+     *
+     * @param absListView
+     * @return
+     */
+    public Snackbar attachToAbsListView(AbsListView absListView) {
+        absListView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+                dismiss();
+            }
 
             @Override
-            public void onAnimationRepeat ( Animation animation) {
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount,
+                                 int totalItemCount) {
+            }
+        });
+
+        return this;
+    }
+
+    /**
+     * Attaches this {@link Snackbar} to a RecyclerView so it dismisses when the list is scrolled
+     *
+     * @param recyclerView The RecyclerView instance to attach to.
+     * @return
+     */
+    public Snackbar attachToRecyclerView(View recyclerView) {
+
+        try {
+            Class.forName("android.support.v7.widget.RecyclerView");
+
+            // We got here, so now we can safely check
+            RecyclerUtil.setScrollListener(this, recyclerView);
+        } catch (ClassNotFoundException ignored) {
+            throw new IllegalArgumentException("RecyclerView not found. Did you add it to your dependencies?");
+        }
+
+        return this;
+    }
+
+    /**
+     * Use a custom typeface for this Snackbar's text
+     *
+     * @param typeface
+     * @return
+     */
+    public Snackbar textTypeface(Typeface typeface) {
+        mTextTypeface = typeface;
+        return this;
+    }
+
+    /**
+     * Use a custom typeface for this Snackbar's action label
+     *
+     * @param typeface
+     * @return
+     */
+    public Snackbar actionLabelTypeface(Typeface typeface) {
+        mActionTypeface = typeface;
+        return this;
+    }
+
+    private MarginLayoutParams createMarginLayoutParams(ViewGroup viewGroup, int width, int height) {
+        if (viewGroup instanceof FrameLayout) {
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(width, height);
+            params.gravity = mPosition;
+            return params;
+        } else if (viewGroup instanceof RelativeLayout) {
+            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(width, height);
+
+	        if (mPosition == TOP)
+		        params.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
+	        else
+		        params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
+
+            return params;
+        } else if (viewGroup instanceof LinearLayout) {
+	        LinearLayout.LayoutParams params = new LayoutParams(width, height);
+	        params.gravity = mPosition;
+	        return params;
+        } else {
+            throw new IllegalStateException("Requires FrameLayout or RelativeLayout for the parent of Snackbar");
+        }
+    }
+
+    private MarginLayoutParams init(Context context, Activity targetActivity, ViewGroup parent, boolean usePhoneLayout) {
+        SnackbarLayout layout = (SnackbarLayout) LayoutInflater.from(context)
+                .inflate(R.layout.sb__template, this, true);
+
+        Resources res = getResources();
+        mColor = mColor != mUndefinedColor ? mColor : res.getColor(R.color.sb__background);
+	    mPosition = mPosition != -1 ? mPosition : BOTTOM;
+        mOffset = res.getDimensionPixelOffset(R.dimen.sb__offset);
+        mUsePhoneLayout = usePhoneLayout;
+        float scale = res.getDisplayMetrics().density;
+
+        MarginLayoutParams params;
+        if (mUsePhoneLayout) {
+            // Phone
+            layout.setMinimumHeight(dpToPx(mType.getMinHeight(), scale));
+            layout.setMaxHeight(dpToPx(mType.getMaxHeight(), scale));
+            layout.setBackgroundColor(mColor);
+            params = createMarginLayoutParams(
+                    parent, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+        } else {
+            // Tablet/desktop
+            mType = SnackbarType.SINGLE_LINE; // Force single-line
+            layout.setMinimumWidth(res.getDimensionPixelSize(R.dimen.sb__min_width));
+            layout.setMaxWidth(res.getDimensionPixelSize(R.dimen.sb__max_width));
+            layout.setBackgroundResource(R.drawable.sb__bg);
+            GradientDrawable bg = (GradientDrawable) layout.getBackground();
+            bg.setColor(mColor);
+
+            params = createMarginLayoutParams(
+                    parent, FrameLayout.LayoutParams.WRAP_CONTENT, dpToPx(mType.getMaxHeight(), scale));
+        }
+
+	    if (mDrawable != -1)
+		    setBackgroundDrawable(layout, res.getDrawable(mDrawable));
+
+        TextView snackbarText = (TextView) layout.findViewById(R.id.sb__text);
+        snackbarText.setText(mText);
+        snackbarText.setTypeface(mTextTypeface);
+
+        if (mTextColor != mUndefinedColor) {
+            snackbarText.setTextColor(mTextColor);
+        }
+
+        snackbarText.setMaxLines(mType.getMaxLines());
+
+        TextView snackbarAction = (TextView) layout.findViewById(R.id.sb__action);
+        if (!TextUtils.isEmpty(mActionLabel)) {
+            requestLayout();
+            snackbarAction.setText(mActionLabel);
+            snackbarAction.setTypeface(mActionTypeface);
+
+            if (mActionColor != mUndefinedColor) {
+                snackbarAction.setTextColor(mActionColor);
+            }
+
+            snackbarAction.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (mActionClickListener != null) {
+
+                        // Before calling the onActionClicked() callback, make sure:
+                        // 1) The snackbar is not dismissing
+                        // 2) If we aren't allowing multiple clicks, that this is the first click
+                        if (!mIsDismissing && (!mActionClicked || mShouldAllowMultipleActionClicks)) {
+
+                            mActionClickListener.onActionClicked(Snackbar.this);
+                            mActionClicked = true;
+                        }
+                    }
+                    if (mShouldDismissOnActionClicked) {
+                        dismiss();
+                    }
+                }
+            });
+            snackbarAction.setMaxLines(mType.getMaxLines());
+        } else {
+            snackbarAction.setVisibility(GONE);
+        }
+
+        setClickable(true);
+
+        if (mCanSwipeToDismiss && res.getBoolean(R.bool.sb__is_swipeable)) {
+            setOnTouchListener(new SwipeDismissTouchListener(this, null,
+                    new SwipeDismissTouchListener.DismissCallbacks() {
+                        @Override
+                        public boolean canDismiss(Object token) {
+                            return true;
+                        }
+
+                        @Override
+                        public void onDismiss(View view, Object token) {
+                            if (view != null) {
+                                dismiss(false);
+                            }
+                        }
+
+                        @Override
+                        public void pauseTimer(boolean shouldPause) {
+                            if (isIndefiniteDuration()) {
+                                return;
+                            }
+                            if (shouldPause) {
+                                removeCallbacks(mDismissRunnable);
+
+                                mSnackbarFinish = System.currentTimeMillis();
+                            } else {
+                                mTimeRemaining -= (mSnackbarFinish - mSnackbarStart);
+
+                                startTimer(mTimeRemaining);
+                            }
+                        }
+                    }));
+        }
+
+        return params;
+    }
+
+    private void updateWindowInsets(Activity targetActivity, Rect outInsets) {
+        outInsets.left = outInsets.top = outInsets.right = outInsets.bottom = 0;
+
+        if (targetActivity == null) {
+            return;
+        }
+
+        ViewGroup decorView = (ViewGroup) targetActivity.getWindow().getDecorView();
+        Display display = targetActivity.getWindowManager().getDefaultDisplay();
+
+        boolean isTranslucent = isNavigationBarTranslucent(targetActivity);
+        boolean isHidden = isNavigationBarHidden(decorView);
+
+        Rect dispFrame = mDisplayFrame;
+        Point realDispSize = mRealDisplaySize;
+        Point dispSize = mDisplaySize;
+
+        decorView.getWindowVisibleDisplayFrame(dispFrame);
+
+        DisplayCompat.getRealSize(display, realDispSize);
+        DisplayCompat.getSize(display, dispSize);
+
+        if (dispSize.x < realDispSize.x) {
+            // navigation bar is placed on right side of the screen
+            if (isTranslucent || isHidden) {
+                int navBarWidth = realDispSize.x - dispSize.x;
+                int overlapWidth = realDispSize.x - dispFrame.right;
+                outInsets.right = Math.max(Math.min(navBarWidth, overlapWidth), 0);
+            }
+        } else if (dispSize.y < realDispSize.y) {
+            // navigation bar is placed on bottom side of the screen
+
+            if (isTranslucent || isHidden) {
+                int navBarHeight = realDispSize.y - dispSize.y;
+                int overlapHeight = realDispSize.y - dispFrame.bottom;
+                outInsets.bottom = Math.max(Math.min(navBarHeight, overlapHeight), 0);
+            }
+        }
+    }
+
+    public void showByReplace(Activity targetActivity) {
+        mIsShowingByReplace = true;
+        show(targetActivity);
+    }
+
+    public void showByReplace(ViewGroup parent) {
+        mIsShowingByReplace = true;
+        show(parent, shouldUsePhoneLayout(parent.getContext()));
+    }
+
+    public void showByReplace(ViewGroup parent, boolean usePhoneLayout) {
+        mIsShowingByReplace = true;
+        show(parent, usePhoneLayout);
+    }
+
+    /**
+     * Displays the {@link Snackbar} at the bottom of the
+     * {@link android.app.Activity} provided.
+     *
+     * @param targetActivity
+     */
+    public void show(Activity targetActivity) {
+        ViewGroup root = (ViewGroup) targetActivity.findViewById(android.R.id.content);
+        boolean usePhoneLayout = shouldUsePhoneLayout(targetActivity);
+        MarginLayoutParams params = init(targetActivity, targetActivity, root, usePhoneLayout);
+        updateLayoutParamsMargins(targetActivity, params);
+        showInternal(targetActivity, params, root);
+    }
+
+    /**
+     * Displays the {@link Snackbar} at the bottom of the
+     * {@link android.view.ViewGroup} provided.
+     *
+     * @param parent
+     */
+    public void show(ViewGroup parent) {
+        show(parent, shouldUsePhoneLayout(parent.getContext()));
+    }
+
+    /**
+     * Displays the {@link Snackbar} at the bottom of the
+     * {@link android.view.ViewGroup} provided.
+     *
+     * @param parent
+     * @param usePhoneLayout
+     */
+    public void show(ViewGroup parent, boolean usePhoneLayout) {
+        MarginLayoutParams params = init(parent.getContext(), null, parent, usePhoneLayout);
+        updateLayoutParamsMargins(null, params);
+        showInternal(null, params, parent);
+    }
+
+    private void showInternal(Activity targetActivity, MarginLayoutParams params, ViewGroup parent) {
+        parent.removeView(this);
+
+        parent.addView(this, params);
+
+        bringToFront();
+
+        // As requested in the documentation for bringToFront()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+            parent.requestLayout();
+            parent.invalidate();
+        }
+
+        mIsShowing = true;
+        mTargetActivity = targetActivity;
+
+        getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                getViewTreeObserver().removeOnPreDrawListener(this);
+                if (mEventListener != null) {
+                    if (mIsShowingByReplace) {
+                        mEventListener.onShowByReplace(Snackbar.this);
+                    } else {
+                        mEventListener.onShow(Snackbar.this);
+                    }
+                    if (!mAnimated) {
+                        mEventListener.onShown(Snackbar.this);
+                        mIsShowingByReplace = false; // reset flag
+                    }
+                }
+                return true;
+            }
+        });
+
+        if (!mAnimated) {
+            if (shouldStartTimer()) {
+                startTimer();
+            }
+            return;
+        }
+
+        Animation slideIn = AnimationUtils.loadAnimation(getContext(), mPosition == TOP ? R.anim.snackbar_top_in : R.anim.snackbar_bottom_in);
+        slideIn.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                if (mEventListener != null) {
+                    mEventListener.onShown(Snackbar.this);
+                    mIsShowingByReplace = false; // reset flag
+                }
+
+                post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mSnackbarStart = System.currentTimeMillis();
+
+                        if (mTimeRemaining == -1) {
+                            mTimeRemaining = getDuration();
+                        }
+                        if (shouldStartTimer()) {
+                            startTimer();
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
             }
         });
         startAnimation(slideIn);
-	}
-
-	private boolean shouldStartTimer () {
-		return !isIndefiniteDuration();
-	}
-
-	private boolean isIndefiniteDuration () {
-		return getDuration() == SnackbarDuration.LENGTH_INDEFINITE.getDuration();
-	}
-
-	@TargetApi (Build.VERSION_CODES.JELLY_BEAN)
-	private boolean isNavigationBarHidden ( ViewGroup root ) {
-
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
-			return false;
-		}
-
-		int viewFlags = root.getWindowSystemUiVisibility();
-		return (viewFlags & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION) == View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
-	}
-
-	private boolean isNavigationBarTranslucent ( Activity targetActivity ) {
-
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-			return false;
-		}
-
-		int flags = targetActivity.getWindow().getAttributes().flags;
-		return (flags & WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION) != 0;
-	}
-
-	private void startTimer () {
-		postDelayed(mDismissRunnable, getDuration());
-	}
-
-	private void startTimer ( long duration) {
-		postDelayed(mDismissRunnable, duration);
-	}
-
-    public void dismissByReplace () {
-	    mIsReplacePending = true;
-	    dismiss();
     }
 
-	public void dismiss () {
-		dismiss(mAnimated);
-	}
+    private boolean shouldStartTimer() {
+        return !isIndefiniteDuration();
+    }
 
-	private void dismiss ( boolean animate ) {
-		if (mIsDismissing) {
-			return;
-		}
+    private boolean isIndefiniteDuration() {
+        return getDuration() == SnackbarDuration.LENGTH_INDEFINITE.getDuration();
+    }
 
-		mIsDismissing = true;
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+    private boolean isNavigationBarHidden(ViewGroup root) {
 
-		if (mEventListener != null && mIsShowing) {
-			if (mIsReplacePending) {
-				mEventListener.onDismissByReplace(Snackbar.this);
-			} else {
-				mEventListener.onDismiss(Snackbar.this);
-			}
-		}
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+            return false;
+        }
 
-		if (!animate) {
-			finish();
-			return;
-		}
+        int viewFlags = root.getWindowSystemUiVisibility();
+        return (viewFlags & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION) ==
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+    }
 
-		final Animation slideOut = AnimationUtils.loadAnimation(getContext(), mPosition == TOP ? R.anim.snackbar_top_out : R.anim.snackbar_bottom_out);
-		slideOut.setAnimationListener(new Animation.AnimationListener() {
-			@Override
-			public void onAnimationStart ( Animation animation ) {
-			}
+    private boolean isNavigationBarTranslucent(Activity targetActivity) {
 
-			@Override
-			public void onAnimationEnd ( Animation animation ) {
-				post(new Runnable() {
-					@Override
-					public void run () {
-						finish();
-					}
-				});
-			}
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+            return false;
+        }
 
-			@Override
-			public void onAnimationRepeat ( Animation animation ) {
-			}
-		});
-		startAnimation(slideOut);
-	}
+        int flags = targetActivity.getWindow().getAttributes().flags;
+        return (flags & WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION) != 0;
+    }
 
-	private void finish () {
-		clearAnimation();
-		ViewGroup parent = (ViewGroup) getParent();
-		if (parent != null) {
-			parent.removeView(this);
-		}
-		if (mEventListener != null && mIsShowing) {
-			mEventListener.onDismissed(this);
-		}
-		mIsShowing = false;
-		mIsReplacePending = false;
-		mTargetActivity = null;
-	}
+    private void startTimer() {
+        postDelayed(mDismissRunnable, getDuration());
+    }
 
-	@Override
-	protected void onDetachedFromWindow() {
-		super.onDetachedFromWindow();
-		if (mDismissRunnable != null) {
-			removeCallbacks(mDismissRunnable);
+    private void startTimer(long duration) {
+        postDelayed(mDismissRunnable, duration);
+    }
+
+    public void dismissByReplace() {
+        mIsReplacePending = true;
+        dismiss();
+    }
+
+    public void dismiss() {
+        dismiss(mAnimated);
+    }
+
+    private void dismiss(boolean animate) {
+        if (mIsDismissing) {
+            return;
+        }
+
+        mIsDismissing = true;
+
+        if (mEventListener != null && mIsShowing) {
+            if (mIsReplacePending) {
+                mEventListener.onDismissByReplace(Snackbar.this);
+            } else {
+                mEventListener.onDismiss(Snackbar.this);
+            }
+        }
+
+        if (!animate) {
+            finish();
+            return;
+        }
+
+        final Animation slideOut = AnimationUtils.loadAnimation(getContext(), mPosition == TOP ? R.anim.snackbar_top_out : R.anim.snackbar_bottom_out);
+        slideOut.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                post(new Runnable() {
+                    @Override
+                    public void run() {
+                        finish();
+                    }
+                });
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+            }
+        });
+        startAnimation(slideOut);
+    }
+
+    private void finish() {
+        clearAnimation();
+        ViewGroup parent = (ViewGroup) getParent();
+        if (parent != null) {
+            parent.removeView(this);
+        }
+        if (mEventListener != null && mIsShowing) {
+            mEventListener.onDismissed(this);
+        }
+        mIsShowing = false;
+        mIsReplacePending = false;
+        mTargetActivity = null;
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (mDismissRunnable != null) {
+            removeCallbacks(mDismissRunnable);
         }
         if (mRefreshLayoutParamsMarginsRunnable != null) {
-	        removeCallbacks(mRefreshLayoutParamsMarginsRunnable);
+            removeCallbacks(mRefreshLayoutParamsMarginsRunnable);
         }
     }
 
-    void dispatchOnWindowSystemUiVisibilityChangedCompat ( int visible ) {
-	    onWindowSystemUiVisibilityChangedCompat(visible);
+    void dispatchOnWindowSystemUiVisibilityChangedCompat(int visible) {
+        onWindowSystemUiVisibilityChangedCompat(visible);
     }
 
-	protected void onWindowSystemUiVisibilityChangedCompat ( int visible ) {
-		if (mRefreshLayoutParamsMarginsRunnable != null) {
-			post(mRefreshLayoutParamsMarginsRunnable);
-		}
-	}
-
-	protected void refreshLayoutParamsMargins () {
-		if (mIsDismissing) {
-			return;
-		}
-
-		ViewGroup parent = (ViewGroup) getParent();
-		if (parent == null) {
-			return;
-		}
-
-		MarginLayoutParams params = (MarginLayoutParams) getLayoutParams();
-
-		updateLayoutParamsMargins(mTargetActivity, params);
-
-		setLayoutParams(params);
-	}
-
-	protected void updateLayoutParamsMargins ( Activity targetActivity, MarginLayoutParams params ) {
-		if (mUsePhoneLayout) {
-			// Phone
-			params.topMargin = mMarginTop == -1 ? 0 : mMarginTop;
-			params.rightMargin = mMarginRight == -1 ? 0 : mMarginRight;
-			params.leftMargin = mMarginLeft == -1 ? 0 : mMarginLeft;
-			params.bottomMargin = mMarginBottom == -1 ? 0 : mMarginBottom;
-		} else {
-			// Tablet/desktop
-			params.topMargin = 0;
-			params.rightMargin = 0;
-			params.leftMargin = mOffset;
-			params.bottomMargin = mOffset;
-		}
-
-		// Add bottom/right margin when navigation bar is hidden or translucent
-		updateWindowInsets(targetActivity, mWindowInsets);
-
-		params.rightMargin += mWindowInsets.right;
-		params.bottomMargin += mWindowInsets.bottom;
-	}
-
-	public int getActionColor () {
-		return mActionColor;
-	}
-
-	public CharSequence getActionLabel () {
-		return mActionLabel;
-	}
-
-	public int getTextColor() {
-		return mTextColor;
-	}
-
-	public int getColor () {
-		return mColor;
-	}
-
-	public CharSequence getText () {
-		return mText;
-	}
-
-	public long getDuration() {
-		return mCustomDuration == -1 ? mDuration.getDuration() : mCustomDuration;
-	}
-
-	public SnackbarType getType () {
-		return mType;
-	}
-
-	/**
-	 * @return whether the action button has been clicked. In other words, this method will let
-	 * you know if {@link com.nispok.snackbar.listeners.ActionClickListener#onActionClicked(Snackbar)}
-	 * was called. This is useful, for instance, if you want to know during
-	 * {@link com.nispok.snackbar.listeners.EventListener#onDismiss(Snackbar)} if the
-	 * {@link com.nispok.snackbar.Snackbar} is being dismissed because of its action click
-	 */
-	public boolean isActionClicked () {
-		return mActionClicked;
-	}
-
-	/**
-	 * @return the pixel offset of this {@link com.nispok.snackbar.Snackbar} from the left and
-	 * bottom of the {@link android.app.Activity}.
-	 */
-	public int getOffset () {
-		return mOffset;
-	}
-
-	public boolean isAnimated () {
-		return mAnimated;
-	}
-
-	public boolean shouldDismissOnActionClicked() {
-		return mShouldDismissOnActionClicked;
-	}
-
-	/**
-	 * @return true if this {@link com.nispok.snackbar.Snackbar} is currently showing
-	 */
-	public boolean isShowing () {
-	    return mIsShowing;
+    protected void onWindowSystemUiVisibilityChangedCompat(int visible) {
+        if (mRefreshLayoutParamsMarginsRunnable != null) {
+            post(mRefreshLayoutParamsMarginsRunnable);
+        }
     }
 
-	/**
-	 * @return true if this {@link com.nispok.snackbar.Snackbar} is dismissing.
-	 */
-	public boolean isDimissing () {
-		return mIsDismissing;
-	}
+    protected void refreshLayoutParamsMargins() {
+        if (mIsDismissing) {
+            return;
+        }
 
-	/**
-	 * @return false if this {@link com.nispok.snackbar.Snackbar} has been dismissed
-	 */
-	public boolean isDismissed () {
-		return !mIsShowing;
-	}
+        ViewGroup parent = (ViewGroup) getParent();
+        if (parent == null) {
+            return;
+        }
 
-	public enum SnackbarDuration {
-		LENGTH_SHORT(2000), LENGTH_LONG(3500), LENGTH_INDEFINITE(-1);
+        MarginLayoutParams params = (MarginLayoutParams) getLayoutParams();
 
-		private long duration;
+        updateLayoutParamsMargins(mTargetActivity, params);
 
-		SnackbarDuration(long duration) {
-			this.duration = duration;
+        setLayoutParams(params);
+    }
+
+    protected void updateLayoutParamsMargins(Activity targetActivity, MarginLayoutParams params) {
+        if (mUsePhoneLayout) {
+            // Phone
+            params.topMargin = mMarginTop == -1 ? 0 : mMarginTop;
+            params.rightMargin = mMarginRight == -1 ? 0 : mMarginRight;
+            params.leftMargin = mMarginLeft == -1 ? 0 : mMarginLeft;
+            params.bottomMargin = mMarginBottom == -1 ? 0 : mMarginBottom;
+        } else {
+            // Tablet/desktop
+            params.topMargin = 0;
+            params.rightMargin = 0;
+            params.leftMargin = mOffset;
+            params.bottomMargin = mOffset;
+        }
+
+        // Add bottom/right margin when navigation bar is hidden or translucent
+        updateWindowInsets(targetActivity, mWindowInsets);
+
+        params.rightMargin += mWindowInsets.right;
+        params.bottomMargin += mWindowInsets.bottom;
+    }
+
+    public int getActionColor() {
+        return mActionColor;
+    }
+
+    public CharSequence getActionLabel() {
+        return mActionLabel;
+    }
+
+    public int getTextColor() {
+        return mTextColor;
+    }
+
+    public int getColor() {
+        return mColor;
+    }
+
+    public CharSequence getText() {
+        return mText;
+    }
+
+    public long getDuration() {
+        return mCustomDuration == -1 ? mDuration.getDuration() : mCustomDuration;
+    }
+
+    public SnackbarType getType() {
+        return mType;
+    }
+
+    /**
+     * @return whether the action button has been clicked. In other words, this method will let
+     * you know if {@link com.nispok.snackbar.listeners.ActionClickListener#onActionClicked(Snackbar)}
+     * was called. This is useful, for instance, if you want to know during
+     * {@link com.nispok.snackbar.listeners.EventListener#onDismiss(Snackbar)} if the
+     * {@link com.nispok.snackbar.Snackbar} is being dismissed because of its action click
+     */
+    public boolean isActionClicked() {
+        return mActionClicked;
+    }
+
+    /**
+     * @return the pixel offset of this {@link com.nispok.snackbar.Snackbar} from the left and
+     * bottom of the {@link android.app.Activity}.
+     */
+    public int getOffset() {
+        return mOffset;
+    }
+
+    public boolean isAnimated() {
+        return mAnimated;
+    }
+
+    public boolean shouldDismissOnActionClicked() {
+        return mShouldDismissOnActionClicked;
+    }
+
+    /**
+     * @return true if this {@link com.nispok.snackbar.Snackbar} is currently showing
+     */
+    public boolean isShowing() {
+        return mIsShowing;
+    }
+
+    /**
+     * @return true if this {@link com.nispok.snackbar.Snackbar} is dismissing.
+     */
+    public boolean isDimissing() {
+        return mIsDismissing;
+    }
+
+    /**
+     * @return false if this {@link com.nispok.snackbar.Snackbar} has been dismissed
+     */
+    public boolean isDismissed() {
+        return !mIsShowing;
+    }
+
+    public enum SnackbarDuration {
+        LENGTH_SHORT(2000), LENGTH_LONG(3500), LENGTH_INDEFINITE(-1);
+
+        private long duration;
+
+        SnackbarDuration(long duration) {
+            this.duration = duration;
         }
 
         public long getDuration() {
